@@ -81,6 +81,13 @@ textarea:focus{border-color:var(--b)}textarea.ok{border-color:var(--g);backgroun
 .sp{border:2px solid var(--bd);border-radius:16px;background:var(--card);margin:0 0 18px;overflow:hidden}
 .spt{display:flex;align-items:center;gap:8px;width:100%;padding:11px 14px;background:none;border:0;font-weight:900;font-size:14px;color:var(--b);text-align:left}
 .spb{padding:0 14px 12px;font-size:14px;line-height:1.55}.spb ul{margin:4px 0 8px;padding-left:20px}.spb li{margin-bottom:3px}.spb b{font-weight:900}
+.chip{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+.chip.float{position:fixed;z-index:60;margin:0;pointer-events:none;box-shadow:0 10px 24px rgba(0,0,0,.3);transform:scale(1.06) rotate(-2deg);opacity:.97;animation:none}
+.ans .chip.drag-src{display:none}.bank .chip.drag-src{opacity:.3}
+.slot{flex:none;width:4px;height:40px;margin:0 2px;border-radius:3px;background:var(--b);align-self:flex-start}
+.ans.over{background-color:rgba(28,176,246,.07)}
+.dh{color:var(--mut);font-size:13px;text-align:center;margin-top:16px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 code{font-family:var(--mono);font-size:.9em;background:var(--card);padding:1px 6px;border-radius:6px;word-break:break-word}
 .foot code{background:rgba(0,0,0,.07)}
 </style>
@@ -243,12 +250,12 @@ if(ex.o){h+=ex.o.map(function(o,i){var c="opt";if(done){if(i==ex.a)c+=" ok";else
 else if(ex.t){h+='<textarea id="ti" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="Écris ta requête CQL…" class="'+(done?(S.good?"ok":"no"):"")+'" '+(done?"readonly":"")+' oninput="S.txt=this.value;document.getElementById(\'go\').disabled=!this.value.trim()">'+esc(S.txt)+'</textarea>';
 if(!done&&!S.exam)h+='<button class="hint" onclick="S.hint=true;show()">'+I("bulb",16)+'Indice</button>'+(S.hint?'<div style="color:var(--mut);margin-top:6px">Commence par : <code>'+esc(ans(ex).split(" ").slice(0,3).join(" "))+'…</code></div>':"")}
 else{if(!S.bank)S.bank=shuf(ex.b.concat(ex.x||[]).map(function(t,i){return {t:t,id:i}}));
-h+='<div class="ans'+(done&&!S.good?" no":"")+'">'+S.placed.map(chip).join("")+'</div><div class="bank">'+S.bank.map(function(b){return S.placed.indexOf(b.id)>=0?'<span class="chip used">'+esc(b.t)+'</span>':chip(b.id)}).join("")+'</div>'}
+h+='<div class="ans'+(done&&!S.good?" no":"")+'">'+S.placed.map(chip).join("")+'</div><div class="bank">'+S.bank.map(function(b){return S.placed.indexOf(b.id)>=0?'<span class="chip used">'+esc(b.t)+'</span>':chip(b.id)}).join("")+'</div>'+(done?"":'<div class="dh">Touche ou glisse les blocs pour les placer et les réordonner.</div>')}
 h+='</main>';
 var can=ex.o?S.sel!==null:ex.t?S.txt.trim().length>0:S.placed.length>0;
 if(!done)h+='<div class="foot"><button id="go" class="btn" '+(can?"":"disabled")+' onclick="check()">Vérifier</button></div>';
 else h+='<div class="foot '+(S.good?"ok":"bad")+'"><div class="fb"><b>'+I(S.good?"check":"x",22)+(S.good?"Bravo !":"Pas tout à fait…")+'</b>'+(S.good?"":ex.o?"Bonne réponse : "+esc(ex.o[ex.a])+"<br>":"Bonne réponse : <code>"+esc(ans(ex))+"</code><br>")+esc(ex.e)+'</div><button class="btn" onclick="next()">Continuer</button></div>';
-A.innerHTML=h}
+A.innerHTML=h;if(S.fid!=null){var fe=A.querySelector('.ans .chip[data-id="'+S.fid+'"]');if(fe)fe.focus();S.fid=null}}
 D.chev='<path d="M6 9l6 6 6-6"/>';D.chevu='<path d="M18 15l-6-6-6 6"/>';
 var SP=[
 null,
@@ -266,8 +273,9 @@ null,
 '<b>Rappel</b> – table <code>mesures</code> : partition key <code>station_id</code>, clustering key <code>date_heure</code> ; pm25, ozone, co2, temperature, bruit (DOUBLE) ; alertes SET&lt;TEXT&gt;, capteurs LIST&lt;TEXT&gt;, meta MAP&lt;TEXT, TEXT&gt;. Les exemples utilisent la station ST001 et la mesure du 2025-02-10 10:00:00.'];
 L.forEach(function(l,i){l.sp=SP[i]});
 function spCard(ex){var sp=ex.o?null:L[parseInt(ex.id)].sp;if(!sp)return "";return '<div class="sp"><button class="spt" onclick="S.spHide=!S.spHide;show()">'+I("file",16)+'<span style="flex:1">Énoncé du TP</span>'+I(S.spHide?"chev":"chevu",18)+'</button>'+(S.spHide?"":'<div class="spb">'+sp+'</div>')+'</div>'}
-function chip(id){var b=S.bank.filter(function(x){return x.id==id})[0];return '<button class="chip" onclick="pick('+id+')">'+esc(b.t)+'</button>'}
-function pick(i){if(S.st!="ask")return;var ex=cur();
+function chip(id){var b=S.bank.filter(function(x){return x.id==id})[0];return '<button class="chip" data-id="'+id+'" onclick="pick('+id+')">'+esc(b.t)+'</button>'}
+var SUP=false;
+function pick(i){if(SUP||S.st!="ask")return;var ex=cur();
 if(ex.o)S.sel=i;else{var k=S.placed.indexOf(i);if(k>=0)S.placed.splice(k,1);else S.placed.push(i)}
 show()}
 function check(){var ex=cur(),g;
@@ -287,6 +295,37 @@ var td=new Date().toDateString();if(P.last!=td){var y=new Date(Date.now()-864e5)
 P.done[S.li]=true;P.xp+=S.xp;save();
 var last=allDone();
 A.innerHTML='<div class="end"><div class="big" style="color:#e6b400">'+I(last?"trophy":"award",56)+'</div><h2>'+(last?"TP terminé !":"Leçon terminée !")+'</h2><p>'+esc(L[S.li].n)+' : validée.</p><div class="stats"><div class="stat"><small>XP</small>+'+S.xp+'</div><div class="stat"><small>Cœurs</small>'+S.hearts+'/5</div></div><button class="btn" onclick="home()">Continuer</button></div>'}
+/* Drag & drop (Pointer Events : souris, tactile, stylet) */
+var DR=null;
+function chipAt(e){var c=e.target.closest&&e.target.closest(".chip[data-id]");return c&&!c.classList.contains("used")&&!c.classList.contains("float")&&S&&S.st=="ask"&&S.bank&&A.contains(c)?c:null}
+function drStop(){if(!DR)return;clearTimeout(DR.t);if(DR.clone)DR.clone.remove();if(DR.slot)DR.slot.remove();DR.el.classList.remove("drag-src");var a=A.querySelector(".ans");if(a)a.classList.remove("over");DR=null}
+function drBegin(){if(!DR||DR.on)return;DR.on=true;var r=DR.el.getBoundingClientRect();DR.dx=DR.x-r.left;DR.dy=DR.y-r.top;var c=DR.el.cloneNode(true);c.removeAttribute("onclick");c.classList.add("float");c.style.width=r.width+"px";document.body.appendChild(c);DR.clone=c;DR.slot=document.createElement("span");DR.slot.className="slot";DR.el.classList.add("drag-src");if(navigator.vibrate)try{navigator.vibrate(8)}catch(e){}drMove()}
+function drMove(){var c=DR.clone;c.style.left=(DR.x-DR.dx)+"px";c.style.top=(DR.y-DR.dy)+"px";
+var a=A.querySelector(".ans");if(!a)return;var r=a.getBoundingClientRect(),x=DR.x,y=DR.y;
+DR.inside=x>=r.left-10&&x<=r.right+10&&y>=r.top-14&&y<=r.bottom+14;a.classList.toggle("over",DR.inside);
+if(!DR.inside){DR.slot.remove();return}
+var chips=[].slice.call(a.querySelectorAll(".chip[data-id]")).filter(function(k){return k!==DR.el}),idx=0;
+chips.forEach(function(k){var q=k.getBoundingClientRect();if(y>q.bottom||(y>=q.top&&x>q.left+q.width/2))idx++});
+DR.idx=idx;var ref=chips[idx]||null;if(DR.slot.nextSibling!==ref||DR.slot.parentNode!==a)a.insertBefore(DR.slot,ref)}
+function drDrop(){var d=DR;if(!d||!d.on){drStop();return}
+var pl=S.placed.filter(function(i){return i!==d.id}),changed=false;
+if(d.inside){pl.splice(d.idx,0,d.id);changed=true}else if(d.from=="ans"){changed=true}
+drStop();SUP=true;setTimeout(function(){SUP=false},0);
+if(changed&&S.st=="ask"){S.placed=pl;S.fid=null;show()}}
+document.addEventListener("pointerdown",function(e){if(DR||(e.pointerType=="mouse"&&e.button!==0))return;var c=chipAt(e);if(!c)return;
+DR={el:c,id:+c.dataset.id,pid:e.pointerId,type:e.pointerType,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,from:c.parentNode.classList.contains("ans")?"ans":"bank",on:false};
+if(e.pointerType!=="mouse")DR.t=setTimeout(drBegin,170)});
+document.addEventListener("pointermove",function(e){if(!DR||e.pointerId!==DR.pid)return;DR.x=e.clientX;DR.y=e.clientY;
+if(DR.on){drMove();return}
+var d=Math.hypot(DR.x-DR.x0,DR.y-DR.y0);if(DR.type==="mouse"){if(d>5)drBegin()}else if(d>10){drStop()}});
+document.addEventListener("pointerup",function(e){if(DR&&e.pointerId===DR.pid)drDrop()});
+document.addEventListener("pointercancel",function(e){if(DR&&e.pointerId===DR.pid)drStop()});
+document.addEventListener("touchmove",function(e){if(DR&&DR.on)e.preventDefault()},{passive:false});
+document.addEventListener("contextmenu",function(e){if(DR)e.preventDefault()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&DR)drStop()});
+A.addEventListener("keydown",function(e){var c=e.target.closest&&e.target.closest(".ans .chip[data-id]");if(!c||!S||S.st!="ask")return;var id=+c.dataset.id,k=S.placed.indexOf(id),d=e.key=="ArrowLeft"?-1:e.key=="ArrowRight"?1:0;
+if(d){var j=k+d;if(j<0||j>=S.placed.length)return;e.preventDefault();S.placed.splice(k,1);S.placed.splice(j,0,id);S.fid=id;show()}
+else if(e.key=="Backspace"||e.key=="Delete"){e.preventDefault();S.placed.splice(k,1);show()}});
 document.addEventListener("keydown",function(e){if(e.key!="Enter"||!S||e.target.tagName=="BUTTON")return;if(e.target.tagName=="TEXTAREA"&&!(e.ctrlKey||e.metaKey))return;var b=document.querySelector(".foot .btn");if(b&&!b.disabled){e.preventDefault();b.click()}});
 home();cloud();
 </script>
