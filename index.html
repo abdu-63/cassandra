@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<meta name="description" content="Entraîne-toi sur le TP3 Cassandra (EcoTrack) et sur le cours NoSQL, façon Duolingo."><meta name="theme-color" content="#58cc02"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2358cc02'/%3E%3Cpath d='M9 11c0-2 3-3 7-3s7 1 7 3v10c0 2-3 3-7 3s-7-1-7-3zM9 16c0 2 3 3 7 3s7-1 7-3' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <title>EcoTrack · Cassandra façon Duolingo</title>
 <style>
 :root{--bg:#fff;--fg:#2b3a42;--mut:#7b8a93;--bd:#e5e9ec;--g:#58cc02;--gd:#46a302;--r:#ff4b4b;--rd:#d93a3a;--b:#1cb0f6;--bd2:#1491c9;--o:#ff9600;--od:#d97e00;--gb:#e1f7cb;--rb:#ffe3e3;--card:#f4f7f8;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -86,7 +86,7 @@ code{font-family:var(--mono);font-size:.9em;background:var(--card);padding:1px 6
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app"></div><noscript><p style="padding:24px">Active JavaScript pour utiliser l’application.</p></noscript>
 <script>
 var W=function(t){return ["WHERE","station_id","=","'ST001'","AND","date_heure","=","'"+t+"'"]};
 var T1="2025-02-10 10:00:00",T2="2025-02-10 10:10:00",T3="2025-02-10 10:20:00";
@@ -115,7 +115,7 @@ var L=[
 {n:"Insérer stations",ic:"pin",ex:[
 {q:"Insère ST001 : Lyon, 45.75, 4.85, EcoCity / Urbain.",b:is("ST001","Lyon",45.75,4.85,"{'operateur':'EcoCity','type':'Urbain'}"),x:["UPDATE","'Paris',"],e:"La MAP s’écrit avec des accolades clé:valeur."},
 {q:"Insère ST002 : Paris, 48.85, 2.35, GreenAir / Traffic.",b:is("ST002","Paris",48.85,2.35,"{'operateur':'GreenAir','type':'Traffic'}"),x:["{'operateur','GreenAir'}","'Lyon',"],e:"Même structure, valeurs différentes."},
-{q:"Tape l’insertion de ST003 : Marseille, 43.30, 5.37, EcoCity / Côtier.",t:is("ST003","Marseille",43.30,5.37,"{'operateur':'EcoCity','type':'Côtier'}").join(" "),e:"Colonnes : station_id, ville, latitude, longitude, meta."}]},
+{q:"Tape l’insertion de ST003 : Marseille, 43.30, 5.37, EcoCity / Côtier.",t:["43.30",43.3].map(function(la){return is("ST003","Marseille",la,5.37,"{'operateur':'EcoCity','type':'Côtier'}").join(" ")}),e:"Colonnes : station_id, ville, latitude, longitude, meta."}]},
 {n:"Insérer mesures",ic:"download",ex:[
 {q:"Mesure 1 (10:00:00) : pm25 18, ozone 42, co2 510, temp 12.4, bruit 58, alerte PM25_High.",b:im(T1,"18, 42, 510, 12.4, 58","{'PM25_High'}","['PM25','Ozone','CO2']","{'ville':'Lyon','zone':'Centre'}"),x:["['PM25_High']","{'PM25','Ozone','CO2'}"],e:"SET entre accolades, LIST entre crochets."},
 {q:"Mesure 2 (10:10:00) : sans alerte.",b:im(T2,"20, 40, 520, 12.0, 60","{}","['PM25','Ozone']","{'ville':'Lyon'}"),x:["null,","[],"],e:"Un SET vide s’écrit {}."},
@@ -146,7 +146,7 @@ var L=[
 {q:"Tape la requête qui affiche uniquement la colonne meta de ST001.",t:"SELECT meta FROM mesures WHERE station_id = 'ST001';",e:"Même principe avec la MAP."},
 {q:"Pourquoi station_id est-il quasi obligatoire dans le WHERE ?",o:["Il localise la partition ; sinon ALLOW FILTERING (coûteux)","Obligatoire par syntaxe SQL","Il accélère l’affichage seulement","Il n’est pas obligatoire du tout"],a:0,e:"Sans partition key, Cassandra parcourrait tous les nœuds."}]},
 {n:"Timestamps",ic:"clock",ex:[
-{q:"Étape 8 : tape la requête qui affiche les timestamps internes de pm25 et ozone (mesure de 10:00:00).",t:["SELECT","WRITETIME(pm25), WRITETIME(ozone)","FROM","mesures"].concat(W(T1),[";"]).join(" "),e:"WRITETIME renvoie la date d’écriture en microsecondes."},
+{q:"Étape 8 : tape la requête qui affiche les timestamps internes de pm25 et ozone (mesure de 10:00:00).",t:["WRITETIME(pm25), WRITETIME(ozone)","WRITETIME(ozone), WRITETIME(pm25)"].map(function(c){return ["SELECT",c,"FROM","mesures"].concat(W(T1),[";"]).join(" ")}),e:"WRITETIME renvoie la date d’écriture en microsecondes."},
 {q:"Comment Cassandra tranche-t-elle deux écritures concurrentes sur une même colonne ?",o:["La plus récente (timestamp) gagne","La première écriture gagne","Le nœud maître décide","Elle refuse la seconde"],a:0,e:"Last-write-wins, colonne par colonne."},
 {q:"Peut-on appeler WRITETIME sur une colonne de la clé primaire ?",o:["Non","Oui, la partition key seulement","Oui, toutes","Seulement sur les MAP"],a:0,e:"WRITETIME ne fonctionne que sur les colonnes normales."}]},
 {n:"Théorie du cours",ic:"book",ex:[
@@ -176,12 +176,13 @@ var L=[
 ];
 var P={done:[],xp:0,streak:0,last:"",best:0,wr:{}},S=null,DB=null,A=document.getElementById("app");
 try{var s0=localStorage.getItem("cassduo");if(s0)P=JSON.parse(s0)}catch(e){}
+if(!P||typeof P!="object")P={};P.done=Array.isArray(P.done)?P.done:[];P.xp=+P.xp||0;P.streak=+P.streak||0;P.best=+P.best||0;P.last=P.last||"";P.wr=P.wr&&typeof P.wr=="object"?P.wr:{};
 function save(){P.done=L.map(function(_,i){return !!P.done[i]});try{localStorage.setItem("cassduo",JSON.stringify(P))}catch(e){}if(DB)DB.set(JSON.parse(JSON.stringify(P))).catch(function(){})}
 function cloud(){try{if(!window.claude||!claude.use)return;Promise.all([claude.use("db"),claude.use("user")]).then(function(r){if(!r[0]||!r[1])return;return r[1].id().then(function(id){var d=r[0].doc("data/users/"+id+"/progress");return d.get().then(function(sn){var c=sn&&sn.exists?sn.data():null;if(c){var m=(c.done||[]).map(function(v,i){return v||!!P.done[i]});L.forEach(function(_,i){m[i]=!!(m[i]||P.done[i])});P.done=m;if((c.xp||0)>P.xp){P.xp=c.xp;P.streak=c.streak||0;P.last=c.last||""}P.best=Math.max(P.best||0,c.best||0);P.wr=Object.assign({},c.wr||{},P.wr||{})}DB=d;save();if(!S)home()})})}).catch(function(){})}catch(e){}}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 function nz(s){return s.toLowerCase().replace(/[“”"]/g,"'").replace(/\s+/g,"").replace(/;+$/,"")}
-function ans(e){return e.b?e.b.join(" "):e.t?[].concat(e.t)[0]:""}
+function ans(e){return e.b?e.b.join(" ").replace(/ ;/g,";").replace(/ \);/g,");").replace(/\( /g,"("):e.t?[].concat(e.t)[0].replace(/ ;/g,";").replace(/ \);/g,");").replace(/\( /g,"("):""}
 function allDone(){return L.every(function(_,i){return P.done[i]})}
 var D={
 database:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/>',
@@ -250,28 +251,28 @@ else h+='<div class="foot '+(S.good?"ok":"bad")+'"><div class="fb"><b>'+I(S.good
 A.innerHTML=h}
 D.chev='<path d="M6 9l6 6 6-6"/>';D.chevu='<path d="M18 15l-6-6-6 6"/>';
 var SP=[
-'<b>Étape 1.</b> Créer un keyspace nommé <code>EcoTrack</code> avec une stratégie de réplication simple.',
+null,
 '<b>Étape 2 – Table mesures</b> : mesures environnementales d’une station. Elle doit contenir :<ul><li>une station (<code>station_id</code>)</li><li>une date/heure de mesure (<code>date_heure</code>)</li><li>plusieurs capteurs numériques : <code>pm25</code>, <code>ozone</code>, <code>co2</code>, <code>temperature</code>, <code>bruit</code></li><li>un SET d’alertes (<code>alertes</code>)</li><li>une LIST des capteurs présents (<code>capteurs</code>)</li><li>une MAP de métadonnées (<code>meta</code>)</li></ul><b>Contraintes</b> : station_id = clé de partition · ordre temporel assuré par une clustering key · valeurs numériques en DOUBLE · collections correctement typées.',
 '<b>Table stations</b> : informations fixes des stations — identifiant, ville, latitude, longitude, une MAP d’informations supplémentaires (<code>meta</code> : opérateur, type…).<br>Contraintes : une station = une clé primaire · pas de clustering · données structurées mais extensibles (MAP).<br><br><b>Table events</b> : événements techniques envoyés par les stations — <code>station_id</code>, <code>horodatage_event</code>, <code>type_event</code> (texte), <code>tags</code> (SET).<br>Contraintes : une station a beaucoup d’événements → wide row · ordre chronologique géré par une clustering key.',
-'<b>Insertion dans la table stations</b><ul><li><b>ST001</b> : Lyon, 45.75, 4.85, meta {"operateur" : "EcoCity", "type" : "Urbain"}</li><li><b>ST002</b> : Paris, 48.85, 2.35, meta {"operateur" : "GreenAir", "type" : "Traffic"}</li><li><b>ST003</b> : Marseille, 43.30, 5.37, meta {"operateur" : "EcoCity", "type" : "Côtier"}</li></ul>',
+null,
 '<b>Mesures de la station ST001 (Lyon)</b><ul><li><b>Mesure 1</b> – 2025-02-10 10:00:00 · pm25 18 · ozone 42 · co2 510 · temperature 12.4 · bruit 58 · alertes {"PM25_High"} · capteurs ["PM25", "Ozone", "CO2"] · meta {"ville" : "Lyon", "zone" : "Centre"}</li><li><b>Mesure 2</b> – 2025-02-10 10:10:00 · pm25 20 · ozone 40 · co2 520 · temperature 12.0 · bruit 60 · alertes {} (aucune) · capteurs ["PM25", "Ozone"] · meta {"ville" : "Lyon"}</li><li><b>Mesure 3</b> – 2025-02-10 10:20:00 · pm25 21 · ozone 38 · co2 530 · temperature 11.5 · bruit 62 · alertes {"Noise_Alert"} · capteurs ["PM25", "Bruit"] · meta {"ville" : "Lyon", "zone" : "Est"}</li></ul>',
-'<b>Insertion dans la table events</b><ul><li><b>Événement 1</b> : ST001 · 2025-02-10 09:55:00 · "redemarrage_capteur" · tags {"info", "auto-restart"}</li><li><b>Événement 2</b> : ST001 · 2025-02-10 10:05:00 · "batterie_faible" · tags {"warning", "battery"}</li><li><b>Événement 3</b> : ST002 · 2025-02-10 10:15:00 · "panne_capteur_pm25" · tags {"critical", "maintenance"}</li></ul>',
-'<b>Étape 4 – Mise à jour de valeurs simples</b><ul><li>Mesure de ST001 à 2025-02-10 10:10:00 : remplacer la valeur co2 par 525.</li><li>Mesure de ST001 à 2025-02-10 10:20:00 : remplacer la valeur pm25 par 19.5.</li></ul>',
-'<b>Étape 5 – Mise à jour de collections</b> (table mesures)<ul><li>Mesure de ST001 du 2025-02-10 à 10:00:00 → ajouter l’alerte "PM25_VeryHigh".</li><li>Mesure de ST001 du 2025-02-10 à 10:20:00 → ajouter le capteur "Humidity".</li><li>Mesure de ST001 du 2025-02-10 à 10:10:00 → ajouter ou modifier dans la MAP : clé "quartier", valeur "Bellecour".</li></ul>',
-'<b>Étape 6 – Suppressions</b> (table mesures)<ul><li>Mesure ST001 à 2025-02-10 10:20:00 : supprimer uniquement la colonne pm25.</li><li>Mesure ST001 à 2025-02-10 10:00:00 : supprimer uniquement la clé "zone" dans la MAP.</li></ul>',
-'<b>Étape 7 – Interrogation avec SELECT</b> (station_id = ’ST001’)<ul><li>Afficher toutes les mesures de la station.</li><li>Afficher uniquement date_heure, pm25, ozone et alertes.</li><li>Afficher les mesures entre 2025-02-10 10:00:00 et 2025-02-10 10:15:00.</li><li>Afficher uniquement la colonne alertes pour toutes les mesures.</li><li>Afficher uniquement la colonne meta pour toutes les mesures.</li></ul>',
-'<b>Étape 8 – Timestamps internes</b> : écrire une requête qui affiche les timestamps internes pour les deux colonnes (pm25 et ozone) pour une même ligne de la table mesures.',
+null,
+null,
+null,
+null,
+null,
+null,
 null,
 '<b>Rappel</b> – table <code>mesures</code> : partition key <code>station_id</code>, clustering key <code>date_heure</code> ; pm25, ozone, co2, temperature, bruit (DOUBLE) ; alertes SET&lt;TEXT&gt;, capteurs LIST&lt;TEXT&gt;, meta MAP&lt;TEXT, TEXT&gt;. Les exemples utilisent la station ST001 et la mesure du 2025-02-10 10:00:00.'];
 L.forEach(function(l,i){l.sp=SP[i]});
-function spCard(ex){var sp=L[parseInt(ex.id)].sp;if(!sp)return "";return '<div class="sp"><button class="spt" onclick="S.spHide=!S.spHide;show()">'+I("file",16)+'<span style="flex:1">Énoncé du TP</span>'+I(S.spHide?"chev":"chevu",18)+'</button>'+(S.spHide?"":'<div class="spb">'+sp+'</div>')+'</div>'}
+function spCard(ex){var sp=ex.o?null:L[parseInt(ex.id)].sp;if(!sp)return "";return '<div class="sp"><button class="spt" onclick="S.spHide=!S.spHide;show()">'+I("file",16)+'<span style="flex:1">Énoncé du TP</span>'+I(S.spHide?"chev":"chevu",18)+'</button>'+(S.spHide?"":'<div class="spb">'+sp+'</div>')+'</div>'}
 function chip(id){var b=S.bank.filter(function(x){return x.id==id})[0];return '<button class="chip" onclick="pick('+id+')">'+esc(b.t)+'</button>'}
 function pick(i){if(S.st!="ask")return;var ex=cur();
 if(ex.o)S.sel=i;else{var k=S.placed.indexOf(i);if(k>=0)S.placed.splice(k,1);else S.placed.push(i)}
 show()}
 function check(){var ex=cur(),g;
 if(ex.o)g=S.sel==ex.a;
-else if(ex.t)g=[].concat(ex.t).some(function(t){return nz(t)===nz(S.txt)});
+else if(ex.t)g=[].concat(ex.t).some(function(t){var w=t.match(/^(.*\sWHERE\s)(.*?)\s+AND\s+(.*?)(;?)$/i);return nz(t)===nz(S.txt)||(w&&nz(w[1]+w[3]+" AND "+w[2]+w[4])===nz(S.txt))});
 else g=S.placed.map(function(id){return S.bank.filter(function(x){return x.id==id})[0].t}).join(" ")===ex.b.join(" ");
 S.good=g;S.st="done";
 if(g){S.ok++;S.xp+=ex.t?15:10;delete P.wr[ex.id]}else{S.hearts--;P.wr[ex.id]=1;if(S.exam)S.miss.push(ex.q);else S.q.push(S.q[S.pos])}
